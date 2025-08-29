@@ -1,0 +1,183 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Speed Posts</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    background-image: url(hero-bg.jpg);
+      padding: 20px;
+    }
+    #app {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.2);
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background:#3498db;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    .post {
+      background: #f9f9f9;
+      padding: 10px;
+      margin-top: 10px;
+      border-left: 4px solid #3498db;
+      position: relative;
+    }
+    .post .name {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .post .time {
+      font-size: 0.8em;
+      color: gray;
+    }
+    .delete-btn {
+      position: absolute;
+      bottom: -7%;
+      right: 10px;
+      background: red;
+      color: white;
+      border: none;
+      padding: 5px 8px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .comment {
+      background: #e0e0e0;
+      padding: 5px;
+      border-radius: 5px;
+      margin-top: 5px;
+    }
+    .comment .comment-time {
+      font-size: 0.75em;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <h2>Post anything in your mind</h2>
+  <input type="text" id="username" placeholder="Your Name" />
+  <textarea id="message" placeholder="What's on your mind?"></textarea>
+  <button onclick="submitPost()">Post</button>
+
+  <div id="posts"></div>
+</div>
+
+<script>
+  let posts = [];
+
+  window.onload = function () {
+    const saved = localStorage.getItem('posts');
+    if (saved) posts = JSON.parse(saved);
+
+    const savedName = localStorage.getItem('username');
+    if (savedName) {
+      document.getElementById('username').value = savedName;
+      document.getElementById('username').disabled = true;
+    }
+
+    renderPosts();
+  };
+
+  function submitPost() {
+    const nameInput = document.getElementById("username");
+    const message = document.getElementById("message").value.trim();
+    const time = new Date().toLocaleString();
+    let name = nameInput.value.trim();
+
+    if (!name || !message) {
+      alert("Please enter your name and message.");
+      return;
+    }
+
+    if (!localStorage.getItem('username')) {
+      localStorage.setItem('username', name);
+      nameInput.disabled = true;
+    } else {
+      name = localStorage.getItem('username');
+    }
+
+    const id = Date.now();
+    const post = { id, name, message, time, comments: [] };
+    posts.unshift(post);
+    localStorage.setItem('posts', JSON.stringify(posts));
+    renderPosts();
+
+    document.getElementById("message").value = "";
+  }
+
+  function renderPosts() {
+    const postsContainer = document.getElementById("posts");
+    postsContainer.innerHTML = "";
+
+    posts.forEach(post => {
+      const postBox = document.createElement("div");
+      postBox.className = "post";
+
+      let commentsHtml = '';
+      post.comments.forEach(c => {
+        commentsHtml += `
+          <div class="comment">
+            <strong>${c.name}</strong>: ${c.text}
+            <div class="comment-time">${c.time}</div>
+          </div>
+        `;
+      });
+
+      postBox.innerHTML = `
+        <div class="name">${post.name}</div>
+        <div>${post.message}</div>
+        <div class="time">${post.time}</div>
+        <button class="delete-btn" onclick="deletePost(${post.id})">Delete</button>
+
+        <div class="comments">${commentsHtml}</div>
+        <textarea placeholder="Write a comment..." id="comment-${post.id}"></textarea>
+        <button onclick="addComment(${post.id})">Add Comment</button>
+      `;
+
+      postsContainer.appendChild(postBox);
+    });
+  }
+
+  function addComment(postId) {
+    const commentBox = document.getElementById(`comment-${postId}`);
+    const commentText = commentBox.value.trim();
+    const username = localStorage.getItem('username');
+    const time = new Date().toLocaleString();
+
+    if (!commentText) return;
+
+    const post = posts.find(p => p.id === postId);
+    post.comments.push({ name: username, text: commentText, time });
+
+    localStorage.setItem('posts', JSON.stringify(posts));
+    renderPosts();
+  }
+
+  function deletePost(id) {
+    posts = posts.filter(post => post.id !== id);
+    localStorage.setItem('posts', JSON.stringify(posts));
+    renderPosts();
+  }
+</script>
+
+</body>
+</html>
